@@ -1,0 +1,39 @@
+# SPDX-License-Identifier: MIT
+# Copyright (C) 2025-2026 Polycode Limited
+# .github/workflows/on-intent.yml
+#
+# Thin consumer workflow. Fires when an issue is assigned/labelled, or when
+# INTENT.md (the fixed point) is pushed, and asks the agentic-lib engine to
+# deliver that intent as a pull request.
+
+name: on-intent
+run-name: "on-intent [${{ github.ref_name }}]"
+
+on:
+  issues:
+    types: [assigned, labeled]
+  push:
+    paths:
+      - "INTENT.md"
+  workflow_dispatch:
+    inputs:
+      work_item:
+        description: "Work item (issue number or intent reference)"
+        type: string
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  deliver-intent:
+    uses: polycode-public/agentic-lib/.github/workflows/transform.yml@v8
+    with:
+      type: deliver-intent
+      work_item: ${{ inputs.work_item || (github.event.issue && format('#{0}', github.event.issue.number)) || 'INTENT.md' }}
+      max_turns: 20
+      model: ""
+    secrets: inherit

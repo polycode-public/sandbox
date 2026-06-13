@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: MIT
+# Copyright (C) 2025-2026 Polycode Limited
+# .github/workflows/on-schedule.yml
+#
+# Thin consumer workflow. On a cron schedule, asks the agentic-lib engine to
+# tend the repository (maintenance), or to fix CI when the default branch is red.
+
+name: on-schedule
+run-name: "on-schedule ${{ inputs.type || 'tend' }} [${{ github.ref_name }}]"
+
+on:
+  schedule:
+    - cron: "20 16 * * *"
+  workflow_dispatch:
+    inputs:
+      type:
+        description: "Transformation type"
+        type: choice
+        required: false
+        default: tend
+        options:
+          - tend
+          - fix-ci
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  schedule:
+    uses: polycode-public/agentic-lib/.github/workflows/transform.yml@v8
+    with:
+      type: ${{ inputs.type || 'tend' }}
+      work_item: ""
+      max_turns: 20
+      model: ""
+    secrets: inherit

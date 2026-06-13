@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: MIT
+# Copyright (C) 2025-2026 Polycode Limited
+# agentic-lib.toml — engine config for the agentic-lib transform.
+#
+# Read machine-readably by the engine (and by marginalia's issue-scoper) to
+# size work to the one-shot envelope. Keep it minimal: the template ships
+# product, not machinery.
+
+[engine]
+# Pinned agentic-lib reusable-workflow ref the consumer workflows call.
+ref = "v8"
+# Provider lane and model (see agentic-lib MODELS.md). Empty model = engine default.
+engine = "claude"
+model = ""
+# Hosting option for the one-shot transform: A=Claude cloud, B=Copilot, C=self-hosted.
+hosted = "C"
+
+[caps]
+# Per-run and per-day limits.
+max_turns = 20
+daily_runs = 8
+
+[paths]
+intent = "INTENT.md"
+source = "src/lib/"
+tests = "tests/unit/"
+behaviour = "tests/behaviour/"

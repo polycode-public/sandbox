@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: MIT
+# Copyright (C) 2025-2026 Polycode Limited
+# .github/workflows/on-review.yml
+#
+# Thin consumer workflow. Fires when a pull request review is submitted and
+# asks the agentic-lib engine to address all review threads in one revision.
+
+name: on-review
+run-name: "on-review [${{ github.ref_name }}]"
+
+on:
+  pull_request_review:
+    types: [submitted]
+  workflow_dispatch:
+    inputs:
+      work_item:
+        description: "Pull request number to address review on"
+        type: string
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  address-review:
+    uses: polycode-public/agentic-lib/.github/workflows/transform.yml@v8
+    with:
+      type: address-review
+      work_item: ${{ inputs.work_item || (github.event.pull_request && format('#{0}', github.event.pull_request.number)) || '' }}
+      max_turns: 20
+      model: ""
+    secrets: inherit

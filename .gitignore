@@ -1,0 +1,34 @@
+# Node
+node_modules/
+
+# Coverage
+coverage/
+
+# Test output
+test-results/
+
+# Environment and secrets
+.env
+secrets.env
+*.kdbx
+.npmrc
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Activity log and screenshot (live on agentic-lib-logs branch, not main)
+/intentïon.md
+/intention.md
+/SCREENSHOT_INDEX.png
+
+# Generated files at repo root (agents should use examples/ instead)
+/*.svg
+/*.pdf
+/*.csv
