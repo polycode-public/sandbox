@@ -109,27 +109,62 @@ INTENT.md -> [supervisor] -> dispatch workflows -> Issue -> Code -> Test -> PR -
 
 The pipeline runs as GitHub Actions workflows. An LLM supervisor gathers repository context and dispatches other workflows. Each workflow uses the Copilot SDK to make targeted changes.
 
-## Examples
+## API
 
-Below are quick examples showing how to use the fizzBuzz library from this repository.
+### `parseCron(expr)`
+
+Parses a cron expression string into a structured object. Supports standard 5-field and 6-field (with seconds) formats, ranges, lists, steps, wildcards, and shortcuts.
+
+**Supported shortcuts:**
+- `@yearly` or `@annually` → `0 0 1 1 *`
+- `@monthly` → `0 0 1 * *`
+- `@weekly` → `0 0 * * 0`
+- `@daily` or `@midnight` → `0 0 * * *`
+- `@hourly` → `0 * * * *`
+
+**Returns:** A structured object with `{ hasSeconds: boolean, fields: {...} }`
+
+**Throws:** Descriptive error on invalid syntax, out-of-range fields, or wrong field count.
+
+### `cronToString(parsed)`
+
+Serializes a parsed cron object back to a cron string. Enables round-tripping of cron expressions.
+
+**Returns:** A canonical cron expression string.
+
+**Throws:** Error if the parsed object is malformed or missing required fields.
+
+## Examples
 
 Node (ESM):
 
 ```js
-import { fizzBuzz, fizzBuzzSingle } from './src/lib/main.js';
+import { parseCron, cronToString } from './src/lib/main.js';
 
-console.log(fizzBuzzSingle(3)); // "Fizz"
-console.log(fizzBuzz(15)); // ["1","2","Fizz",...,"FizzBuzz"]
-```
+// Parse a cron expression
+const parsed = parseCron('0 9 * * 1');
+console.log(parsed);
+// Output:
+// {
+//   hasSeconds: false,
+//   fields: {
+//     minute: { type: 'value', value: 0 },
+//     hour: { type: 'value', value: 9 },
+//     day: { type: 'wildcard', range: [1, 31] },
+//     month: { type: 'wildcard', range: [1, 12] },
+//     dayOfWeek: { type: 'value', value: 1 }
+//   }
+// }
 
-Browser (via src/web/lib.js):
+// Convert back to string
+console.log(cronToString(parsed)); // '0 9 * * 1'
 
-```html
-<script type="module">
-  import { fizzBuzz, fizzBuzzSingle } from './src/web/lib.js';
-  console.log(fizzBuzz(15));
-  console.log(fizzBuzzSingle(7));
-</script>
+// Using shortcuts
+console.log(cronToString(parseCron('@daily'))); // '0 0 * * *'
+
+// Parse every 15 minutes
+const everyFifteen = parseCron('*/15 * * * *');
+console.log(cronToString(everyFifteen)); // '*/15 * * * *'
 ```
 
 ## Configuration
