@@ -8,17 +8,23 @@
     "test": "vitest --run tests/unit/*.test.js",
     "test:unit": "vitest --run --coverage tests/unit/*.test.js",
     "test:behaviour": "npx playwright test --config playwright.config.js",
-    "start:cli": "node src/lib/main.js"
+    "start:cli": "node src/lib/main.js",
+    "init": "npx -y github:polycode-public/agentic-lib#v8 init",
+    "init:dry": "npx -y github:polycode-public/agentic-lib#v8 init --dry-run",
+    "reset": "npx -y github:polycode-public/agentic-lib#v8 init --purge",
+    "reset:mission": "npx -y github:polycode-public/agentic-lib#v8 init --purge --mission",
+    "missions": "npx -y github:polycode-public/agentic-lib#v8 init --list-missions",
+    "engine:version": "npx -y github:polycode-public/agentic-lib#v8 version"
   },
   "keywords": [],
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@playwright/test": "^1.58.0",
-    "@vitest/coverage-v8": "^4.0.18",
-    "jsdom": "^26.1.0",
-    "serve": "^14.2.4",
-    "vitest": "^4.0.18"
+    "@playwright/test": "^1.60.0",
+    "@vitest/coverage-v8": "^4.1.8",
+    "jsdom": "^29.1.1",
+    "serve": "^14.2.6",
+    "vitest": "^4.1.8"
   },
   "engines": {
     "node": ">=24.0.0"

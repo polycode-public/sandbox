@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "marginalia-seon": {
+      "command": "npx",
+      "args": ["-y", "@polycode-projects/marginalia-seon"],
+      "env": {
+        "MARGINALIA_BASE_URL": "${MARGINALIA_BASE_URL:-https://marginalia.polycode.co.uk}",
+        "MARGINALIA_API_KEY": "${MARGINALIA_API_KEY}",
+        "MARGINALIA_GRAPH_ID": "${MARGINALIA_GRAPH_ID}"
+      }
+    }
+  }
+}
