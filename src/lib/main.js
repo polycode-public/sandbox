@@ -231,6 +231,7 @@ export function matches(expr, date) {
   const hour = date.getUTCHours();
   const day = date.getUTCDate();
   const month = date.getUTCMonth() + 1;
+  const year = date.getUTCFullYear();
   const dayOfWeek = date.getUTCDay();
 
   if (hasSeconds && !fieldMatches(fields.second, second)) {
@@ -242,12 +243,19 @@ export function matches(expr, date) {
   if (!fieldMatches(fields.hour, hour)) {
     return false;
   }
-  if (!fieldMatches(fields.day, day)) {
-    return false;
-  }
+
   if (!fieldMatches(fields.month, month)) {
     return false;
   }
+
+  if (!fieldMatches(fields.day, day)) {
+    return false;
+  }
+
+  if (!dayIsValidForMonth(day, month, year)) {
+    return false;
+  }
+
   if (!fieldMatches(fields.dayOfWeek, dayOfWeek)) {
     return false;
   }
@@ -257,6 +265,43 @@ export function matches(expr, date) {
 
 function daysInMonth(year, month) {
   return new Date(year, month, 0).getUTCDate();
+}
+
+function isLeapYear(year) {
+  return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+}
+
+function fieldMatchesWithDateContext(fieldValue, dateValue, year, month, day) {
+  const { type, value, values, start, end, base, step } = fieldValue;
+
+  switch (type) {
+    case "wildcard":
+      return true;
+    case "value":
+      return dateValue === value;
+    case "list":
+      return values.includes(dateValue);
+    case "range":
+      return dateValue >= start && dateValue <= end;
+    case "step": {
+      const [rangeStart, rangeEnd] = base;
+      if (dateValue < rangeStart || dateValue > rangeEnd) return false;
+      return (dateValue - rangeStart) % step === 0;
+    }
+    default:
+      return false;
+  }
+}
+
+function dayIsValidForMonth(day, month, year) {
+  if (day < 1 || day > 31) return false;
+
+  const daysInCurrentMonth = daysInMonth(year, month);
+  if (day > daysInCurrentMonth) return false;
+
+  if (month === 2 && day === 29 && !isLeapYear(year)) return false;
+
+  return true;
 }
 
 export function nextRun(expr, after = new Date()) {
@@ -283,7 +328,12 @@ export function nextRun(expr, after = new Date()) {
     current.setUTCSeconds(current.getUTCSeconds() + 1);
   }
 
-  const maxIterations = 4 * 365 * 24 * 60;
+  const dayField = parsed.fields.day;
+  const monthField = parsed.fields.month;
+  const hasExplicitDay = dayField.type !== "wildcard";
+  const hasExplicitMonth = monthField.type !== "wildcard";
+
+  const maxIterations = 48 * 365 * 24 * 60;
   for (let i = 0; i < maxIterations; i++) {
     if (matches(expr, current)) {
       return new Date(current);
@@ -295,8 +345,8 @@ export function nextRun(expr, after = new Date()) {
       current.setUTCMinutes(current.getUTCMinutes() + 1);
     }
 
-    if (current.getTime() - after.getTime() > 4 * 365 * 24 * 60 * 60 * 1000) {
-      throw new Error("Could not find next run within 4 years");
+    if (current.getTime() - after.getTime() > 48 * 365 * 24 * 60 * 60 * 1000) {
+      throw new Error("Could not find next run within 48 years");
     }
   }
 

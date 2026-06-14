@@ -504,3 +504,132 @@ describe("Acceptance Criteria", () => {
     }
   });
 });
+
+describe("Edge Cases: Month-End Skipping", () => {
+  test("0 0 31 * * should match 31-day months only", () => {
+    // January (31 days)
+    expect(matches("0 0 31 * *", new Date("2025-01-31T00:00:00Z"))).toBe(true);
+    // February (28 days in 2025)
+    expect(matches("0 0 31 * *", new Date("2025-02-28T00:00:00Z"))).toBe(false);
+    // March (31 days)
+    expect(matches("0 0 31 * *", new Date("2025-03-31T00:00:00Z"))).toBe(true);
+    // April (30 days)
+    expect(matches("0 0 31 * *", new Date("2025-04-30T00:00:00Z"))).toBe(false);
+    // May (31 days)
+    expect(matches("0 0 31 * *", new Date("2025-05-31T00:00:00Z"))).toBe(true);
+    // June (30 days)
+    expect(matches("0 0 31 * *", new Date("2025-06-30T00:00:00Z"))).toBe(false);
+    // July (31 days)
+    expect(matches("0 0 31 * *", new Date("2025-07-31T00:00:00Z"))).toBe(true);
+    // August (31 days)
+    expect(matches("0 0 31 * *", new Date("2025-08-31T00:00:00Z"))).toBe(true);
+    // September (30 days)
+    expect(matches("0 0 31 * *", new Date("2025-09-30T00:00:00Z"))).toBe(false);
+    // October (31 days)
+    expect(matches("0 0 31 * *", new Date("2025-10-31T00:00:00Z"))).toBe(true);
+    // November (30 days)
+    expect(matches("0 0 31 * *", new Date("2025-11-30T00:00:00Z"))).toBe(false);
+    // December (31 days)
+    expect(matches("0 0 31 * *", new Date("2025-12-31T00:00:00Z"))).toBe(true);
+  });
+
+  test("nextRuns 0 0 31 * * skips months without 31 days", () => {
+    const start = new Date("2025-01-01T00:00:00Z");
+    const runs = nextRuns("0 0 31 * *", 3, start);
+    expect(runs.length).toBe(3);
+    expect(runs[0].getUTCMonth()).toBe(0); // January
+    expect(runs[0].getUTCDate()).toBe(31);
+    expect(runs[1].getUTCMonth()).toBe(2); // March (skips February)
+    expect(runs[1].getUTCDate()).toBe(31);
+    expect(runs[2].getUTCMonth()).toBe(4); // May (skips April)
+    expect(runs[2].getUTCDate()).toBe(31);
+  });
+
+  test("0 0 30 * * should match 30 and 31-day months only", () => {
+    // February (28 days in 2025)
+    expect(matches("0 0 30 * *", new Date("2025-02-28T00:00:00Z"))).toBe(false);
+    // April (30 days)
+    expect(matches("0 0 30 * *", new Date("2025-04-30T00:00:00Z"))).toBe(true);
+    // May (31 days)
+    expect(matches("0 0 30 * *", new Date("2025-05-30T00:00:00Z"))).toBe(true);
+  });
+
+  test("0 0 29 * * should skip February in non-leap years", () => {
+    // February 2025 (non-leap year, 28 days)
+    expect(matches("0 0 29 * *", new Date("2025-02-28T00:00:00Z"))).toBe(false);
+    // March 2025
+    expect(matches("0 0 29 * *", new Date("2025-03-29T00:00:00Z"))).toBe(true);
+  });
+});
+
+describe("Edge Cases: Leap Year Handling", () => {
+  test("0 0 29 2 * matches Feb 29 in leap years only", () => {
+    // Feb 29, 2024 (leap year)
+    expect(matches("0 0 29 2 *", new Date("2024-02-29T00:00:00Z"))).toBe(true);
+    // Feb 28, 2025 (non-leap year)
+    expect(matches("0 0 29 2 *", new Date("2025-02-28T00:00:00Z"))).toBe(false);
+    // Feb 29, 2028 (leap year)
+    expect(matches("0 0 29 2 *", new Date("2028-02-29T00:00:00Z"))).toBe(true);
+    // Feb 28, 2100 (non-leap year, divisible by 100 but not 400)
+    expect(matches("0 0 29 2 *", new Date("2100-02-28T00:00:00Z"))).toBe(false);
+    // Feb 29, 2000 (leap year, divisible by 400)
+    expect(matches("0 0 29 2 *", new Date("2000-02-29T00:00:00Z"))).toBe(true);
+  });
+
+  test("nextRun 0 0 29 2 * lands on leap year Feb 29", () => {
+    // Starting from 2025 (non-leap year), should find 2028-02-29
+    const result = nextRun("0 0 29 2 *", new Date("2025-01-01T00:00:00Z"));
+    expect(result.getUTCMonth()).toBe(1); // February
+    expect(result.getUTCDate()).toBe(29);
+    expect(result.getUTCFullYear()).toBe(2028); // next leap year after 2025
+  });
+
+  test("nextRuns 0 0 29 2 * finds multiple leap-year dates", () => {
+    const start = new Date("2020-01-01T00:00:00Z");
+    const runs = nextRuns("0 0 29 2 *", 3, start);
+    expect(runs.length).toBe(3);
+    // 2020 is a leap year
+    expect(runs[0].getUTCFullYear()).toBe(2020);
+    expect(runs[0].getUTCDate()).toBe(29);
+    // 2024 is a leap year
+    expect(runs[1].getUTCFullYear()).toBe(2024);
+    expect(runs[1].getUTCDate()).toBe(29);
+    // 2028 is a leap year
+    expect(runs[2].getUTCFullYear()).toBe(2028);
+    expect(runs[2].getUTCDate()).toBe(29);
+  });
+});
+
+describe("Complex Edge Case Combinations", () => {
+  test("nextRuns with large span covers month-end and leap-year skips", () => {
+    // Start from Dec 2024 (leap year) and get several 31st matches
+    const start = new Date("2024-12-01T00:00:00Z");
+    const runs = nextRuns("0 0 31 * *", 5, start);
+    expect(runs.length).toBe(5);
+    // December 2024
+    expect(runs[0].getUTCMonth()).toBe(11);
+    expect(runs[0].getUTCDate()).toBe(31);
+    // January 2025
+    expect(runs[1].getUTCMonth()).toBe(0);
+    expect(runs[1].getUTCDate()).toBe(31);
+    // March 2025 (skip February)
+    expect(runs[2].getUTCMonth()).toBe(2);
+    expect(runs[2].getUTCDate()).toBe(31);
+    // May 2025
+    expect(runs[3].getUTCMonth()).toBe(4);
+    expect(runs[3].getUTCDate()).toBe(31);
+    // July 2025
+    expect(runs[4].getUTCMonth()).toBe(6);
+    expect(runs[4].getUTCDate()).toBe(31);
+  });
+
+  test("day-of-month constraints do not affect day-of-week matching", () => {
+    // "0 0 31 * 1" should match the 31st if it's also a Monday
+    // On 2025-01-31, it is a Friday
+    expect(matches("0 0 31 * 1", new Date("2025-01-31T00:00:00Z"))).toBe(false);
+    // On 2024-01-29, it is a Monday, but day is not 31
+    expect(matches("0 0 31 * 1", new Date("2024-01-29T00:00:00Z"))).toBe(false);
+    // On 2024-01-01, it's a Monday, but day is 1 not 31
+    expect(matches("0 0 31 * 1", new Date("2024-01-01T00:00:00Z"))).toBe(false);
+  });
+});

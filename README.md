@@ -169,7 +169,31 @@ Computes the next `count` UTC times after `after` that match the cron expression
 
 **Returns:** An array of UTC Date objects, sorted in ascending order, all matching the expression.
 
-**Throws:** Error if count is invalid, if no matches are found within 4 years, or if arguments are invalid.
+**Throws:** Error if count is invalid, if no matches are found within 48 years, or if arguments are invalid.
+
+## Edge Cases
+
+### Month-End Boundaries
+
+The library correctly handles cron expressions that specify day-of-month values that don't exist in all months:
+
+- **`0 0 31 * *`** fires only on the 31st of months with 31 days (Jan, Mar, May, Jul, Aug, Oct, Dec). It **skips** February, April, June, September, and November entirely — it does not fire on the last day of those months as a fallback.
+- **`0 0 30 * *`** fires on months with at least 30 days (all except February in non-leap years).
+- **`0 0 29 * *`** in non-leap years skips February entirely.
+
+### Leap Year Handling
+
+The library supports leap-year-aware scheduling:
+
+- **`0 0 29 2 *`** fires only on February 29 in leap years (every 4 years, except century years not divisible by 400).
+  - 2024, 2028, 2032, ... are leap years
+  - 2025, 2026, 2027 are not leap years
+  - 2000 is a leap year (divisible by 400)
+  - 2100, 2200, 2300 are not leap years (divisible by 100 but not 400)
+
+### Search Window
+
+The `nextRun` and `nextRuns` functions use a 48-year search window to accommodate these edge cases. For example, finding the next run of `0 0 29 2 *` may need to skip several years of non-leap years to find the next valid date.
 
 ## Examples
 
@@ -220,6 +244,16 @@ console.log(nextWeek); // [Date, Date, Date, ...]
 // Find the next 5 runs every 15 minutes
 const next5x15min = nextRuns('*/15 * * * *', 5, new Date());
 console.log(next5x15min.map(d => d.toISOString()));
+
+// Example: Month-end scheduling (31st of each month with 31 days)
+const monthEnd31 = nextRuns('0 0 31 * *', 3, new Date('2025-01-01T00:00:00Z'));
+console.log(monthEnd31.map(d => d.toISOString()));
+// Output: [2025-01-31, 2025-03-31, 2025-05-31] — skips Feb, Apr, Jun
+
+// Example: Leap-year scheduling (Feb 29 only)
+const leapDay = nextRuns('0 0 29 2 *', 3, new Date('2020-01-01T00:00:00Z'));
+console.log(leapDay.map(d => d.toISOString()));
+// Output: [2020-02-29, 2024-02-29, 2028-02-29] — only in leap years
 ```
 
 ## Configuration
