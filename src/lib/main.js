@@ -196,6 +196,132 @@ export function cronToString(parsed) {
   return parts.join(" ");
 }
 
+function fieldMatches(fieldValue, dateValue) {
+  const { type, value, values, start, end, base, step } = fieldValue;
+
+  switch (type) {
+    case "wildcard":
+      return true;
+    case "value":
+      return dateValue === value;
+    case "list":
+      return values.includes(dateValue);
+    case "range":
+      return dateValue >= start && dateValue <= end;
+    case "step": {
+      const [rangeStart, rangeEnd] = base;
+      if (dateValue < rangeStart || dateValue > rangeEnd) return false;
+      return (dateValue - rangeStart) % step === 0;
+    }
+    default:
+      return false;
+  }
+}
+
+export function matches(expr, date) {
+  if (!(date instanceof Date)) {
+    throw new Error("Date argument must be a Date instance");
+  }
+
+  const parsed = parseCron(expr);
+  const { fields, hasSeconds } = parsed;
+
+  const second = date.getUTCSeconds();
+  const minute = date.getUTCMinutes();
+  const hour = date.getUTCHours();
+  const day = date.getUTCDate();
+  const month = date.getUTCMonth() + 1;
+  const dayOfWeek = date.getUTCDay();
+
+  if (hasSeconds && !fieldMatches(fields.second, second)) {
+    return false;
+  }
+  if (!fieldMatches(fields.minute, minute)) {
+    return false;
+  }
+  if (!fieldMatches(fields.hour, hour)) {
+    return false;
+  }
+  if (!fieldMatches(fields.day, day)) {
+    return false;
+  }
+  if (!fieldMatches(fields.month, month)) {
+    return false;
+  }
+  if (!fieldMatches(fields.dayOfWeek, dayOfWeek)) {
+    return false;
+  }
+
+  return true;
+}
+
+function daysInMonth(year, month) {
+  return new Date(year, month, 0).getUTCDate();
+}
+
+export function nextRun(expr, after = new Date()) {
+  if (!(after instanceof Date)) {
+    throw new Error("after argument must be a Date instance");
+  }
+
+  const parsed = parseCron(expr);
+
+  let current = new Date(after);
+  current.setUTCMilliseconds(0);
+
+  if (parsed.hasSeconds) {
+    current.setUTCSeconds(0);
+  } else {
+    current.setUTCSeconds(0);
+    current.setUTCMilliseconds(0);
+  }
+
+  if (!parsed.hasSeconds) {
+    current.setUTCMinutes(current.getUTCMinutes() + 1);
+    current.setUTCSeconds(0);
+  } else {
+    current.setUTCSeconds(current.getUTCSeconds() + 1);
+  }
+
+  const maxIterations = 4 * 365 * 24 * 60;
+  for (let i = 0; i < maxIterations; i++) {
+    if (matches(expr, current)) {
+      return new Date(current);
+    }
+
+    if (parsed.hasSeconds) {
+      current.setUTCSeconds(current.getUTCSeconds() + 1);
+    } else {
+      current.setUTCMinutes(current.getUTCMinutes() + 1);
+    }
+
+    if (current.getTime() - after.getTime() > 4 * 365 * 24 * 60 * 60 * 1000) {
+      throw new Error("Could not find next run within 4 years");
+    }
+  }
+
+  throw new Error("Could not find next run");
+}
+
+export function nextRuns(expr, count, after = new Date()) {
+  if (typeof count !== "number" || count <= 0) {
+    throw new Error("count must be a positive number");
+  }
+  if (!(after instanceof Date)) {
+    throw new Error("after argument must be a Date instance");
+  }
+
+  const runs = [];
+  let current = after;
+
+  for (let i = 0; i < count; i++) {
+    current = nextRun(expr, current);
+    runs.push(new Date(current));
+  }
+
+  return runs;
+}
+
 export function main(args) {
   if (args?.includes("--version")) {
     console.log(version);

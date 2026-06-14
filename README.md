@@ -134,6 +134,43 @@ Serializes a parsed cron object back to a cron string. Enables round-tripping of
 
 **Throws:** Error if the parsed object is malformed or missing required fields.
 
+### `matches(expr, date)`
+
+Checks whether a specific UTC date satisfies a cron expression.
+
+**Arguments:**
+- `expr` (string): A cron expression (5 or 6 fields)
+- `date` (Date): A UTC Date object to test
+
+**Returns:** `true` if the date matches the expression, `false` otherwise.
+
+**Throws:** Error if the date is not a Date instance or if the expression is invalid.
+
+### `nextRun(expr, after = new Date())`
+
+Computes the next UTC time at or after `after` that matches the cron expression.
+
+**Arguments:**
+- `expr` (string): A cron expression (5 or 6 fields)
+- `after` (Date, optional): The start time (defaults to current UTC time). The next matching time will be after this moment.
+
+**Returns:** A UTC Date object representing the next matching time.
+
+**Throws:** Error if no match is found within 4 years, or if arguments are invalid.
+
+### `nextRuns(expr, count, after = new Date())`
+
+Computes the next `count` UTC times after `after` that match the cron expression.
+
+**Arguments:**
+- `expr` (string): A cron expression (5 or 6 fields)
+- `count` (number): The number of matching times to find (must be positive)
+- `after` (Date, optional): The start time (defaults to current UTC time)
+
+**Returns:** An array of UTC Date objects, sorted in ascending order, all matching the expression.
+
+**Throws:** Error if count is invalid, if no matches are found within 4 years, or if arguments are invalid.
+
 ## Examples
 
 Node (ESM):
@@ -165,6 +202,24 @@ console.log(cronToString(parseCron('@daily'))); // '0 0 * * *'
 // Parse every 15 minutes
 const everyFifteen = parseCron('*/15 * * * *');
 console.log(cronToString(everyFifteen)); // '*/15 * * * *'
+
+// Check if a date matches an expression
+import { matches, nextRun, nextRuns } from './src/lib/main.js';
+
+const christmas = new Date('2025-12-25T00:00:00Z');
+console.log(matches('0 0 25 12 *', christmas)); // true
+
+// Find the next Monday at 9 AM UTC
+const nextMonday9 = nextRun('0 9 * * 1', new Date('2025-06-15T00:00:00Z'));
+console.log(nextMonday9); // 2025-06-16T09:00:00Z (next Monday)
+
+// Find the next 7 daily runs starting from now
+const nextWeek = nextRuns('@daily', 7);
+console.log(nextWeek); // [Date, Date, Date, ...]
+
+// Find the next 5 runs every 15 minutes
+const next5x15min = nextRuns('*/15 * * * *', 5, new Date());
+console.log(next5x15min.map(d => d.toISOString()));
 ```
 
 ## Configuration
