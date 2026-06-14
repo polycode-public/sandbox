@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: MIT
+name: on-summary
+on:
+  schedule:
+    - cron: "23 */6 * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  export:
+    uses: polycode-public/agentic-lib/.github/workflows/summary-export.yml@v8
+    secrets: inherit
