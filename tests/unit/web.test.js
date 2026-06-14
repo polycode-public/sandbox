@@ -20,12 +20,11 @@ describe("Website", () => {
     expect(html).toContain("lib.js");
   });
 
-  test("src/web/lib.js re-exports from the library and exposes fizz functions", () => {
+  test("src/web/lib.js re-exports the library identity", () => {
     expect(existsSync("src/web/lib.js")).toBe(true);
     const lib = readFileSync("src/web/lib.js", "utf8");
     expect(lib).toContain("../lib/main.js");
-    expect(lib).toContain("fizzBuzz");
-    expect(lib).toContain("fizzBuzzSingle");
+    expect(lib).toContain("getIdentity");
   });
 
   test("index.html displays library identity elements", () => {

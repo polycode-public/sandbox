@@ -27,20 +27,18 @@
       <dd id="lib-description">loading...</dd>
     </dl>
   </div>
-  <h2>FizzBuzz Demo</h2>
+  <h2>Library identity</h2>
   <div id="demo-output">Loading library...</div>
   <h2>About</h2>
-  <p>This website uses the library. See <a href="https://github.com/polycode-public/repository0">the repository</a> for source code and mission details.</p>
+  <p>This website uses the library. See <a href="https://github.com/polycode-public/repository0">the repository</a> for source code and intent details.</p>
   <script type="module">
     try {
-      const { name, version, description, fizzBuzz, fizzBuzzSingle } = await import('./lib.js');
+      const { name, version, description, getIdentity } = await import('./lib.js');
       document.getElementById('lib-name').textContent = name;
       document.getElementById('lib-version').textContent = version;
       document.getElementById('lib-description').textContent = description || '(no description)';
-      // Show fizzBuzz(15) output and a sample single call
-      const fb = fizzBuzz(15);
-      const single = fizzBuzzSingle(7);
-      document.getElementById('demo-output').textContent = `fizzBuzz(15):\n${fb.join(', ')}\n\nfizzBuzzSingle(7): ${single}`;
+      // The seed demo shows the library identity; the engine replaces this as INTENT.md is delivered.
+      document.getElementById('demo-output').textContent = JSON.stringify(getIdentity(), null, 2);
       document.title = name + ' v' + version;
     } catch (e) {
       document.getElementById('lib-version').textContent = '(error)';

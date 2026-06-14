@@ -1,27 +1,25 @@
-# SPDX-License-Identifier: MIT
-# Copyright (C) 2025-2026 Polycode Limited
-# agentic-lib.toml — engine config for the agentic-lib transform.
-#
-# Read machine-readably by the engine (and by marginalia's issue-scoper) to
-# size work to the one-shot envelope. Keep it minimal: the template ships
-# product, not machinery.
+# agentic-lib.toml — engine configuration for this intentïon repository.
+# Consumed by the shared transform.yml workflow and read machine-readably by the
+# marginalia supervisor to size work items to the one-shot envelope.
 
 [engine]
-# Pinned agentic-lib reusable-workflow ref the consumer workflows call.
-ref = "v8"
-# Provider lane and model (see agentic-lib MODELS.md). Empty model = engine default.
-engine = "claude"
-model = ""
-# Hosting option for the one-shot transform: A=Claude cloud, B=Copilot, C=self-hosted.
-hosted = "C"
+# Provider is selected purely by environment variables in CI:
+#   Anthropic lane : ANTHROPIC_API_KEY
+#   Bedrock lane   : CLAUDE_CODE_USE_BEDROCK=1 + OIDC AWS creds + AWS_REGION
+#                    + ANTHROPIC_MODEL=<inference-profile-id>
+# See agentic-lib MODELS.md for the full matrix.
+engine = "claude"          # claude (claude -p, Path B) — the selected engine
+hosted = "C"               # A=Claude Cloud, B=GitHub-hosted runner, C=self-hosted runner
+model = "haiku"            # opus | sonnet | haiku | fable. Haiku 4.5 is the engine the
+                           # kyu benchmark measures (the system-under-test). The Bedrock
+                           # lane runs ANTHROPIC_MODEL regardless, so this and the Bedrock
+                           # inference profile must agree — keep them both Haiku.
 
 [caps]
-# Per-run and per-day limits.
-max_turns = 20
-daily_runs = 8
+max_turns = 30             # per-run --max-turns ceiling (one-shot envelope)
+daily = 24                 # max transformations dispatched per day
 
 [paths]
 intent = "INTENT.md"
 source = "src/lib/"
-tests = "tests/unit/"
-behaviour = "tests/behaviour/"
+tests = "tests/"
