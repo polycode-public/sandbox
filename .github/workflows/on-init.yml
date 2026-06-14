@@ -1,0 +1,46 @@
+# SPDX-License-Identifier: MIT
+# Copyright (C) 2025-2026 Polycode Limited
+# .github/workflows/on-init.yml
+#
+# Thin consumer workflow. Remotely runs `agentic-lib init` (the scaffolding/seed
+# layer) in its various flavours and opens a draft PR with the result — the init
+# analogue of on-intent. Dispatch from the Actions tab or via:
+#   gh workflow run on-init.yml -f mode=init
+#   gh workflow run on-init.yml -f mode=reset -f mission=6-kyu-understand-roman-numerals
+name: on-init
+run-name: "on-init [${{ inputs.mode }}${{ inputs.mission && format(' / {0}', inputs.mission) || '' }}]"
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "init = refresh scaffolding (safe); reset = init --purge (reset product + clean GitHub repo)"
+        type: choice
+        options:
+          - init
+          - reset
+        default: init
+      mission:
+        description: "Mission to seed INTENT.md from (reset only; 'random' picks one). Blank = keep INTENT.md."
+        type: string
+        required: false
+        default: ""
+      dry_run:
+        description: "Show what init would change without writing or committing"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: write
+
+jobs:
+  init:
+    uses: polycode-public/agentic-lib/.github/workflows/init.yml@v8
+    with:
+      mode: ${{ inputs.mode }}
+      mission: ${{ inputs.mission }}
+      dry_run: ${{ inputs.dry_run }}
+    secrets: inherit
