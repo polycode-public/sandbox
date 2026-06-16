@@ -1,39 +1,38 @@
-# SPDX-License-Identifier: MIT
-# Copyright (C) 2025-2026 Polycode Limited
-# .github/workflows/on-intent.yml
-#
-# Thin consumer workflow. Fires when an issue is assigned/labelled, or when
-# INTENT.md (the fixed point) is pushed, and asks the agentic-lib engine to
-# deliver that intent as a pull request.
-
+# on-intent.yml — deliver an intent as one transformation.
+# Fires when a work item is assigned/labelled to the agent, or INTENT.md changes.
 name: on-intent
-run-name: "on-intent [${{ github.ref_name }}]"
-
+concurrency:
+  group: transform-${{ github.event.issue.number || github.ref }}
+  cancel-in-progress: false
 on:
   issues:
     types: [assigned, labeled]
   push:
-    paths:
-      - "INTENT.md"
+    paths: ["INTENT.md"]
+  # workflow_dispatch is how a *hand* drives delivery (human or the benchmark
+  # harness): `gh workflow run on-intent.yml -f work_item=<issue-number>`.
   workflow_dispatch:
     inputs:
       work_item:
-        description: "Work item (issue number or intent reference)"
+        description: "Issue number (a decomposed chunk) or 'INTENT.md' (the whole intent)"
         type: string
         required: false
-        default: ""
-
+        default: "INTENT.md"
 permissions:
   contents: write
   pull-requests: write
   id-token: write
-
 jobs:
-  deliver-intent:
+  deliver:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push' ||
+      github.event.label.name == 'ready' ||
+      github.event.assignee.login == 'agentic-lib[bot]'
     uses: polycode-public/agentic-lib/.github/workflows/transform.yml@v8
     with:
       type: deliver-intent
-      work_item: ${{ inputs.work_item || (github.event.issue && format('#{0}', github.event.issue.number)) || 'INTENT.md' }}
-      max_turns: 20
-      model: ""
+      work_item: ${{ inputs.work_item || (github.event.issue && github.event.issue.number) || 'INTENT.md' }}
+      max_turns: 30
+      model: haiku       # system-under-test; Bedrock lane runs ANTHROPIC_MODEL (Haiku 4.5)
     secrets: inherit

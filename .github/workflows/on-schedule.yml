@@ -1,38 +1,28 @@
-# SPDX-License-Identifier: MIT
-# Copyright (C) 2025-2026 Polycode Limited
-# .github/workflows/on-schedule.yml
-#
-# Thin consumer workflow. On a cron schedule, asks the agentic-lib engine to
-# tend the repository (maintenance), or to fix CI when the default branch is red.
-
+# on-schedule.yml — a scheduled tend pass (one small improvement, or nothing).
 name: on-schedule
-run-name: "on-schedule ${{ inputs.type || 'tend' }} [${{ github.ref_name }}]"
-
+concurrency:
+  group: transform-tend
+  cancel-in-progress: false
 on:
   schedule:
-    - cron: "20 16 * * *"
+    - cron: "0 6 * * *"
   workflow_dispatch:
     inputs:
       type:
-        description: "Transformation type"
+        description: "transformation type"
         type: choice
-        required: false
         default: tend
-        options:
-          - tend
-          - fix-ci
-
+        options: [tend, fix-ci]
 permissions:
   contents: write
   pull-requests: write
   id-token: write
-
 jobs:
-  schedule:
+  tend:
     uses: polycode-public/agentic-lib/.github/workflows/transform.yml@v8
     with:
       type: ${{ inputs.type || 'tend' }}
-      work_item: ""
+      work_item: 0
       max_turns: 20
-      model: ""
+      model: haiku       # system-under-test; Bedrock lane runs ANTHROPIC_MODEL (Haiku 4.5)
     secrets: inherit

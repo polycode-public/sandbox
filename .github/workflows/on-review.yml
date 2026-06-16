@@ -1,16 +1,15 @@
-# SPDX-License-Identifier: MIT
-# Copyright (C) 2025-2026 Polycode Limited
-# .github/workflows/on-review.yml
-#
-# Thin consumer workflow. Fires when a pull request review is submitted and
-# asks the agentic-lib engine to address all review threads in one revision.
-
+# on-review.yml — address all review threads on a PR as one revision.
 name: on-review
-run-name: "on-review [${{ github.ref_name }}]"
-
+concurrency:
+  group: transform-${{ github.event.pull_request.number || github.event.issue.number || inputs.work_item }}
+  cancel-in-progress: false
 on:
   pull_request_review:
     types: [submitted]
+  issue_comment:
+    types: [created]
+  # workflow_dispatch is how a *hand* drives a review pass (human or the benchmark
+  # harness): `gh workflow run on-review.yml -f work_item=<pr-number>`.
   workflow_dispatch:
     inputs:
       work_item:
@@ -18,18 +17,20 @@ on:
         type: string
         required: false
         default: ""
-
 permissions:
   contents: write
   pull-requests: write
   id-token: write
-
 jobs:
-  address-review:
+  revise:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request_review' && github.event.review.state == 'changes_requested') ||
+      (github.event.issue.pull_request && contains(github.event.comment.body, '@agentic-lib'))
     uses: polycode-public/agentic-lib/.github/workflows/transform.yml@v8
     with:
       type: address-review
-      work_item: ${{ inputs.work_item || (github.event.pull_request && format('#{0}', github.event.pull_request.number)) || '' }}
-      max_turns: 20
-      model: ""
+      work_item: ${{ inputs.work_item || github.event.pull_request.number || github.event.issue.number }}
+      max_turns: 30
+      model: haiku       # system-under-test; Bedrock lane runs ANTHROPIC_MODEL (Haiku 4.5)
     secrets: inherit
