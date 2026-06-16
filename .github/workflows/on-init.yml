@@ -35,6 +35,7 @@ permissions:
   pull-requests: write
   issues: write
   actions: write
+  id-token: write # init.yml uses OIDC->AWS to read the M5 App key (workflow-file push)
 
 jobs:
   init:
