@@ -111,6 +111,58 @@ The pipeline runs as GitHub Actions workflows. An LLM supervisor gathers reposit
 
 ## API
 
+### `encode(bytes, name)`
+
+Encodes a Uint8Array to a string using the specified encoding.
+
+**Arguments:**
+- `bytes` (Uint8Array): The binary data to encode
+- `name` (string): The encoding name — `"base62"` or `"base85"`
+
+**Returns:** An encoded string using only the encoding's charset.
+
+**Throws:** Error if the encoding is unknown or bytes is not a Uint8Array.
+
+**Leading zeros:** The function preserves leading zero bytes through the round-trip, ensuring `decode(encode(b, name), name)` equals `b` for all inputs.
+
+### `decode(str, name)`
+
+Decodes a string back to a Uint8Array using the specified encoding.
+
+**Arguments:**
+- `str` (string): The encoded string
+- `name` (string): The encoding name — `"base62"` or `"base85"`
+
+**Returns:** A Uint8Array matching the original input to `encode`.
+
+**Throws:** Error if the encoding is unknown or the string contains invalid characters for that encoding.
+
+## Built-in Encodings
+
+- `base62` — charset `0-9a-zA-Z`, ~5.95 bits/char, 22 chars for a UUID
+- `base85` — charset `!#$%&'()*+,-./0-9:;<=>?@A-Z[\]^_a-z{|}~`, ~6.41 bits/char, 20 chars for a UUID
+
+## Examples
+
+```js
+import { encode, decode } from './src/lib/main.js';
+
+// Encode/decode a UUID (16 bytes)
+const uuid = new Uint8Array([0x55, 0x7e, 0x40, 0x14, 0x36, 0x08, 0xc4, 0x2f, 0xab, 0x14, 0x99, 0xf0, 0xd5, 0x15, 0x6e, 0xc7]);
+
+const encoded62 = encode(uuid, 'base62');
+console.log(encoded62); // 22-character string
+console.log(decode(encoded62, 'base62')); // Uint8Array(...) matching original
+
+const encoded85 = encode(uuid, 'base85');
+console.log(encoded85); // 20-character string
+console.log(decode(encoded85, 'base85')); // Uint8Array(...) matching original
+
+// Edge cases: leading zeros are preserved
+const leadingZeros = new Uint8Array([0, 0, 5]);
+console.log(decode(encode(leadingZeros, 'base62'), 'base62')); // Uint8Array(3) [0, 0, 5]
+```
+
 ### `parseCron(expr)`
 
 Parses a cron expression string into a structured object. Supports standard 5-field and 6-field (with seconds) formats, ranges, lists, steps, wildcards, and shortcuts.
