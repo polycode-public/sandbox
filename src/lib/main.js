@@ -30,6 +30,7 @@ export function getIdentity() {
 const CHARSETS = {
   base62: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
   base85: "!#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_abcdefghijklmnopqrstuvwxyz{|}~",
+  base91: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!#$%&'()*+,./:;<=>?@[]^_`{|}~\"",
 };
 
 export function encode(bytes, name) {
@@ -127,6 +128,14 @@ export function decode(str, name) {
   return result;
 }
 
+export function listEncodings() {
+  return Object.entries(CHARSETS).map(([name, charset]) => ({
+    name,
+    charsetSize: charset.length,
+    bitsPerChar: Math.log2(charset.length),
+  }));
+}
+
 export function demo() {
   const examples = [];
 
@@ -138,6 +147,10 @@ export function demo() {
   const base85Encoded = encode(testData, "base85");
   examples.push(`base85 encode: [42,123,200,5] → "${base85Encoded}"`);
   examples.push(`base85 decode: "${base85Encoded}" → [${Array.from(decode(base85Encoded, "base85")).join(",")}]`);
+
+  const base91Encoded = encode(testData, "base91");
+  examples.push(`base91 encode: [42,123,200,5] → "${base91Encoded}"`);
+  examples.push(`base91 decode: "${base91Encoded}" → [${Array.from(decode(base91Encoded, "base91")).join(",")}]`);
 
   const leadingZeros = new Uint8Array([0, 0, 5]);
   const leadingZerosEncoded = encode(leadingZeros, "base62");
